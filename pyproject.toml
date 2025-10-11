@@ -1,0 +1,65 @@
+[project]
+name = "EasyMCP"
+version = "0.1.0"
+description = "A powerful MCP (Model Context Protocol) proxy server for unified management of multiple MCP servers"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.116.1",
+    "mcp>=1.13.0",
+    "pydantic>=2.11.7",
+    "starlette>=0.47.2",
+    "uvicorn>=0.35.0",
+    "httpx>=0.28.1",
+    "sqlalchemy>=2.0.43",
+    "asyncpg>=0.30.0",
+    "aiosqlite>=0.21.0",
+    "sqlmodel>=0.0.25",
+    "psutil>=6.0.0",
+    "python-jose[cryptography]>=3.5.0",
+    "python-multipart>=0.0.20",
+    "bcrypt>=5.0.0",
+    "types-python-jose>=3.5.0.20250531",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.11,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.17.1",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.13.0",
+    "types-psutil",
+]
+
+[project.scripts]
+easymcp = "easymcp.__main__:main"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=easymcp --cov-report=term-missing"

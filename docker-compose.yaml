@@ -1,0 +1,45 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: easymcp-app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ~/.config/easymcp:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - easymcp-network
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: easymcp
+      POSTGRES_USER: easymcp
+      POSTGRES_PASSWORD: easymcp
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - easymcp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U easymcp -d easymcp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+
+networks:
+  easymcp-network:
+    driver: bridge
