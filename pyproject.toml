@@ -19,6 +19,7 @@ dependencies = [
     "python-multipart>=0.0.20",
     "bcrypt>=5.0.0",
     "types-python-jose>=3.5.0.20250531",
+    "alembic>=1.17.0",
 ]
 
 [build-system]
@@ -45,6 +46,7 @@ line-length = 100
 docstring-code-format = true
 
 [tool.ruff.lint]
+exclude = ["migrations/**"]
 select = [
     # pycodestyle
     "E",

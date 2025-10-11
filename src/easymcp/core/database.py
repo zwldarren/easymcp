@@ -7,7 +7,6 @@ from contextlib import asynccontextmanager, suppress
 
 from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from easymcp.config import get_settings
@@ -128,16 +127,17 @@ def get_db_engine():
 
 
 async def init_db():
-    """Initialize the database and create tables."""
+    """Initialize the database and run migrations."""
     logger.info("Initializing database...")
 
     try:
+        # Run migrations first
+        from easymcp.core.migration import ensure_migrations_run
+
+        await ensure_migrations_run()
+
         # Get database engine
         db_engine = get_db_engine()
-
-        # Create tables
-        async with db_engine.begin() as conn:
-            await conn.run_sync(SQLModel.metadata.create_all)
 
         # Check if User and Session tables exist
         async with db_engine.begin() as conn:
