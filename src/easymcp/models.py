@@ -1,16 +1,13 @@
 """Unified SQLModel models for the EasyMCP API."""
 
-from __future__ import annotations
-
 import re
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import Column, Index
-from sqlmodel import JSON, SQLModel
-from sqlmodel import Field as SQLField
+from pydantic import BaseModel, field_validator
+from sqlalchemy import Column
+from sqlmodel import JSON, Field, Index, SQLModel
 
 
 class ServerConfig(SQLModel, table=True):
@@ -18,17 +15,17 @@ class ServerConfig(SQLModel, table=True):
 
     __tablename__ = "server_configs"
 
-    id: int | None = SQLField(default=None, primary_key=True)
-    name: str = SQLField(unique=True, index=True, nullable=False)
-    enabled: bool = SQLField(default=True)
-    timeout: int = SQLField(default=60)
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(unique=True, index=True, nullable=False)
+    enabled: bool = Field(default=True)
+    timeout: int = Field(default=60)
 
     # Transport configuration (unified storage)
-    transport_type: str = SQLField(nullable=False)  # "stdio", "sse", "streamable-http"
-    transport_config: dict[str, Any] = SQLField(default={}, sa_column=Column(JSON))
+    transport_type: str = Field(nullable=False)  # "stdio", "sse", "streamable-http"
+    transport_config: dict[str, Any] = Field(default={}, sa_column=Column(JSON))
 
     # Optional authentication configuration
-    auth_config: dict[str, Any] | None = SQLField(default=None, sa_column=Column(JSON))
+    auth_config: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
 
     @field_validator("timeout")
     @classmethod
@@ -95,11 +92,11 @@ class GlobalConfig(SQLModel, table=True):
 
     __tablename__ = "global_configs"
 
-    id: int | None = SQLField(default=None, primary_key=True)
-    stateless: bool = SQLField(default=True)
-    log_level: str = SQLField(default="INFO")
-    pass_environment: bool = SQLField(default=False)
-    auth: dict[str, Any] = SQLField(default={}, sa_column=Column(JSON))
+    id: int | None = Field(default=None, primary_key=True)
+    stateless: bool = Field(default=True)
+    log_level: str = Field(default="INFO")
+    pass_environment: bool = Field(default=False)
+    auth: dict[str, Any] = Field(default={}, sa_column=Column(JSON))
 
     @field_validator("log_level")
     @classmethod
@@ -163,7 +160,7 @@ class ServerConfigAPI(BaseModel):
     model_config = {"populate_by_name": True, "from_attributes": True}
 
     @classmethod
-    def from_sqlmodel(cls, sql_model: ServerConfig) -> ServerConfigAPI:
+    def from_sqlmodel(cls, sql_model: ServerConfig) -> "ServerConfigAPI":
         """Convert SQLModel to API model."""
         transport_config = sql_model.transport_config
         transport_type = sql_model.transport_type
@@ -259,7 +256,7 @@ class GlobalConfigAPI(BaseModel):
     model_config = {"from_attributes": True}
 
     @classmethod
-    def from_sqlmodel(cls, sql_model: GlobalConfig) -> GlobalConfigAPI:
+    def from_sqlmodel(cls, sql_model: GlobalConfig) -> "GlobalConfigAPI":
         """Convert SQLModel to API model."""
         return cls.model_validate(
             {
@@ -351,13 +348,13 @@ class User(SQLModel, table=True):
 
     __tablename__ = "users"
 
-    id: int | None = SQLField(default=None, primary_key=True)
-    username: str = SQLField(unique=True, index=True, nullable=False, max_length=50)
-    password_hash: str = SQLField(nullable=False, max_length=255)
-    email: str | None = SQLField(default=None, max_length=255)
-    is_active: bool = SQLField(default=True)
-    created_at: datetime = SQLField(default_factory=lambda: datetime.now(UTC).replace(tzinfo=None))
-    updated_at: datetime = SQLField(default_factory=lambda: datetime.now(UTC).replace(tzinfo=None))
+    id: int | None = Field(default=None, primary_key=True)
+    username: str = Field(unique=True, index=True, nullable=False, max_length=50)
+    password_hash: str = Field(nullable=False, max_length=255)
+    email: str | None = Field(default=None, max_length=255)
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC).replace(tzinfo=None))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC).replace(tzinfo=None))
     last_login: datetime | None = None
 
 
@@ -366,16 +363,24 @@ class Session(SQLModel, table=True):
 
     __tablename__ = "sessions"
 
-    id: int | None = SQLField(default=None, primary_key=True)
-    user_id: int = SQLField(foreign_key="users.id")
-    session_token: str = SQLField(unique=True, index=True, nullable=False, max_length=255)
-    expires_at: datetime = SQLField(nullable=False)
-    created_at: datetime = SQLField(default_factory=lambda: datetime.now(UTC).replace(tzinfo=None))
-    last_accessed_at: datetime = SQLField(
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id")
+    session_token: str = Field(unique=True, index=True, nullable=False, max_length=255)
+    expires_at: datetime = Field(nullable=False)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC).replace(tzinfo=None))
+    last_accessed_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC).replace(tzinfo=None)
     )
     user_agent: str | None = None
     ip_address: str | None = None
+
+
+class UserResponse(BaseModel):
+    """User response model."""
+
+    id: int
+    username: str
+    email: str | None
 
 
 # Pydantic models for API requests/responses
@@ -393,14 +398,6 @@ class LoginResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int
     user: UserResponse
-
-
-class UserResponse(BaseModel):
-    """User response model."""
-
-    id: int
-    username: str
-    email: str | None
 
 
 class ChangePasswordRequest(BaseModel):
@@ -423,17 +420,17 @@ class APIKey(SQLModel, table=True):
 
     __tablename__ = "api_keys"
 
-    id: int | None = SQLField(default=None, primary_key=True)
-    user_id: int = SQLField(foreign_key="users.id", nullable=False)
-    name: str = SQLField(nullable=False, max_length=100)
-    description: str | None = SQLField(default=None, max_length=500)
-    key_hash: str = SQLField(nullable=False, max_length=255)
-    key_prefix: str = SQLField(nullable=False, max_length=8, index=True)
-    scopes: list[str] = SQLField(default=[], sa_column=Column(JSON))
-    is_active: bool = SQLField(default=True)
-    created_at: datetime = SQLField(default_factory=lambda: datetime.now(UTC).replace(tzinfo=None))
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id", nullable=False)
+    name: str = Field(nullable=False, max_length=100)
+    description: str | None = Field(default=None, max_length=500)
+    key_hash: str = Field(nullable=False, max_length=255)
+    key_prefix: str = Field(nullable=False, max_length=8, index=True)
+    scopes: list[str] = Field(default=[], sa_column=Column(JSON))
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC).replace(tzinfo=None))
     last_used: datetime | None = None
-    usage_count: int = SQLField(default=0)
+    usage_count: int = Field(default=0)
 
 
 # Pydantic models for API key requests and responses

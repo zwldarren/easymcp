@@ -46,7 +46,7 @@ def run_migrations() -> None:
         raise
 
 
-def check_migration_status() -> dict[str, str]:
+def check_migration_status() -> dict[str, str | bool]:
     """Check current migration status."""
     try:
         get_alembic_config()
@@ -54,7 +54,7 @@ def check_migration_status() -> dict[str, str]:
         # Get current revision from database directly
         import asyncio
 
-        from sqlalchemy import inspect, text
+        from sqlmodel import inspect, text
 
         from easymcp.core.database import get_db_engine
 
@@ -117,7 +117,7 @@ def check_migration_status() -> dict[str, str]:
         return {
             "current": current or "None (no migrations applied)",
             "latest": latest or "None (no migrations available)",
-            "needs_upgrade": current != latest,
+            "needs_upgrade": str(current != latest),
         }
     except Exception as e:
         logger.error(f"Error checking migration status: {e}")
@@ -133,8 +133,18 @@ def create_migration(message: str) -> str:
         # Generate migration
         revision = command.revision(alembic_cfg, autogenerate=True, message=message)
 
-        logger.info(f"Migration created: {revision.revision}")
-        return revision.revision
+        # Handle different return types from Alembic
+        rev_id = "unknown"
+        if revision is not None:
+            if hasattr(revision, "revision") and revision.revision is not None:
+                rev_id = revision.revision
+            elif isinstance(revision, str):
+                rev_id = revision
+            else:
+                rev_id = str(revision)
+
+        logger.info(f"Migration created: {rev_id}")
+        return rev_id
     except Exception as e:
         logger.error(f"Error creating migration: {e}")
         raise
@@ -152,7 +162,7 @@ def downgrade_migration(revision: str) -> None:
         raise
 
 
-def get_migration_history() -> list[dict[str, str]]:
+def get_migration_history() -> list[dict[str, str | None]]:
     """Get migration history."""
     try:
         # Get migration history by reading files directly

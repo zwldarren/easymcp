@@ -149,7 +149,7 @@ class EasyMCPMiddleware(BaseHTTPMiddleware, ABC):
 class MiddlewareManager:
     """Manages the registration and execution of middleware components."""
 
-    def __init__(self, app):
+    def __init__(self, app) -> None:
         self.app = app
         self._middleware_registry: dict[str, dict[str, Any]] = {}
         self.logger = logging.getLogger("easymcp.middleware.manager")

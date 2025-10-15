@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class MetricsService:
     """Service for managing application metrics and statistics."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the metrics service."""
         self._performance_monitor = get_performance_monitor()
         self._initialized = False

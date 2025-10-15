@@ -4,8 +4,8 @@ import asyncio
 import logging
 from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from easymcp.core.database import get_db_session
 from easymcp.core.errors import ConfigurationError
@@ -213,8 +213,8 @@ class ConsolidatedConfigService:
     async def _get_global_config(self, session: AsyncSession) -> GlobalConfigAPI:
         """Retrieve global configuration from the database."""
         stmt = select(GlobalConfig).order_by("id")
-        result = await session.execute(stmt)
-        config_orm = result.scalar_one_or_none()
+        result = await session.exec(stmt)
+        config_orm = result.one_or_none()
 
         if config_orm:
             return GlobalConfigAPI.from_sqlmodel(config_orm)
@@ -227,8 +227,8 @@ class ConsolidatedConfigService:
         """Update global configuration in the database."""
         try:
             stmt = select(GlobalConfig).order_by("id")
-            result = await session.execute(stmt)
-            config_orm = result.scalar_one_or_none()
+            result = await session.exec(stmt)
+            config_orm = result.one_or_none()
 
             if not config_orm:
                 config_orm = config.to_sqlmodel()
@@ -249,8 +249,8 @@ class ConsolidatedConfigService:
 
     async def _get_all_server_configs(self, session: AsyncSession) -> dict[str, ServerConfigAPI]:
         """Retrieve all server configurations from the database."""
-        result = await session.execute(select(ServerConfig))
-        servers = result.scalars().all()
+        result = await session.exec(select(ServerConfig))
+        servers = result.all()
 
         configs = {}
         for server in servers:
@@ -265,10 +265,10 @@ class ConsolidatedConfigService:
     ) -> ServerConfigAPI:
         """Update a specific server's configuration in the database."""
         try:
-            result = await session.execute(
+            result = await session.exec(
                 select(ServerConfig).where(ServerConfig.name == server_name)
             )
-            server = result.scalar_one_or_none()
+            server = result.one_or_none()
 
             if not server:
                 server = config.to_sqlmodel(server_name)
@@ -304,8 +304,8 @@ class ConsolidatedConfigService:
         """Delete a specific server's configuration from the database."""
         try:
             stmt = select(ServerConfig).where(ServerConfig.name == server_name)
-            result = await session.execute(stmt)
-            server = result.scalar_one_or_none()
+            result = await session.exec(stmt)
+            server = result.one_or_none()
 
             if not server:
                 raise ConfigurationError(f"Server '{server_name}' not found")

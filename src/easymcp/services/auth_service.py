@@ -7,9 +7,8 @@ from datetime import UTC, datetime, timedelta
 
 import bcrypt
 from jose import JWTError, jwt
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col
+from sqlmodel import col, func, select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from easymcp.config import get_settings
 from easymcp.core.database import get_db_session
@@ -98,10 +97,10 @@ class ConsolidatedAuthService:
     ) -> User | None:
         """Authenticate a user with username and password."""
         try:
-            result = await db.execute(
+            result = await db.exec(
                 select(User).where(col(User.username) == username, col(User.is_active))
             )
-            user = result.scalar_one_or_none()
+            user = result.one_or_none()
 
             if not user or not self.verify_password(password, user.password_hash):
                 return None
@@ -146,13 +145,13 @@ class ConsolidatedAuthService:
         if not username:
             return False
 
-        result = await db.execute(
+        result = await db.exec(
             select(Session).where(
                 col(Session.session_token) == token,
                 col(Session.expires_at) > datetime.now(UTC).replace(tzinfo=None),
             )
         )
-        session = result.scalar_one_or_none()
+        session = result.one_or_none()
 
         if not session:
             return False
@@ -163,8 +162,8 @@ class ConsolidatedAuthService:
 
     async def delete_session(self, db: AsyncSession, token: str) -> bool:
         """Delete a session by token."""
-        result = await db.execute(select(Session).where(col(Session.session_token) == token))
-        session = result.scalar_one_or_none()
+        result = await db.exec(select(Session).where(col(Session.session_token) == token))
+        session = result.one_or_none()
 
         if session:
             await db.delete(session)
@@ -215,8 +214,8 @@ class ConsolidatedAuthService:
             if not username:
                 return None
 
-            result = await session.execute(select(User).where(col(User.username) == username))
-            user = result.scalar_one_or_none()
+            result = await session.exec(select(User).where(col(User.username) == username))
+            user = result.one_or_none()
 
             if user:
                 return UserResponse(
@@ -258,14 +257,14 @@ class ConsolidatedAuthService:
     ) -> tuple[APIKey, str]:
         """Create a new API key for a user."""
         # Validate user exists
-        result = await db.execute(select(User).where(col(User.id) == user_id))
-        user = result.scalar_one_or_none()
+        result = await db.exec(select(User).where(col(User.id) == user_id))
+        user = result.one_or_none()
         if not user:
             raise ValueError("User not found")
 
         # Check rate limit
-        count_result = await db.execute(select(func.count()).where(col(APIKey.user_id) == user_id))
-        key_count = count_result.scalar()
+        count_result = await db.exec(select(func.count()).where(col(APIKey.user_id) == user_id))
+        key_count = count_result.one_or_none()
         if key_count and key_count >= 10:
             raise ValueError("Maximum number of API keys (10) reached for this user")
 
@@ -301,13 +300,13 @@ class ConsolidatedAuthService:
 
     async def delete_api_key(self, db: AsyncSession, api_key_id: int, user_id: int) -> bool:
         """Delete an API key permanently."""
-        result = await db.execute(
+        result = await db.exec(
             select(APIKey).where(
                 col(APIKey.id) == api_key_id,
                 col(APIKey.user_id) == user_id,
             )
         )
-        api_key = result.scalar_one_or_none()
+        api_key = result.one_or_none()
 
         if not api_key:
             return False
@@ -321,8 +320,8 @@ class ConsolidatedAuthService:
         """Get all API keys for a user."""
         query = select(APIKey).where(col(APIKey.user_id) == user_id)
         query = query.order_by(col(APIKey.created_at).desc())
-        result = await db.execute(query)
-        return list(result.scalars().all())
+        result = await db.exec(query)
+        return list(result.all())
 
     async def validate_api_key_for_request(
         self,
@@ -354,7 +353,7 @@ class ConsolidatedAuthService:
                     col(User.is_active),
                 )
             )
-            result = await db.execute(query)
+            result = await db.exec(query)
             row = result.first()
 
             if not row:
@@ -483,10 +482,10 @@ class ConsolidatedAuthService:
         if not self.settings.admin_email:
             raise ValueError("Admin email is not configured")
 
-        result = await db.execute(
+        result = await db.exec(
             select(User).where(col(User.username) == self.settings.admin_username)
         )
-        admin_user = result.scalar_one_or_none()
+        admin_user = result.one_or_none()
 
         if admin_user:
             return admin_user

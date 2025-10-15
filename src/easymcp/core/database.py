@@ -5,8 +5,8 @@ import threading
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager, suppress
 
-from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlmodel import inspect
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from easymcp.config import get_settings

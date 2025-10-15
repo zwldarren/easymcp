@@ -124,8 +124,8 @@ async def get_current_user_info(
 
     username = request.state.username
 
-    result = await db.execute(select(User).where(User.username == username))
-    user = result.scalar_one_or_none()
+    result = await db.exec(select(User).where(User.username == username))
+    user = result.one_or_none()
 
     if not user or user.id is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
@@ -150,8 +150,8 @@ async def change_password(
     auth_service = get_consolidated_auth_service()
     await auth_service.initialize()
     # Get user
-    result = await db.execute(select(User).where(User.username == username))
-    user = result.scalar_one_or_none()
+    result = await db.exec(select(User).where(User.username == username))
+    user = result.one_or_none()
 
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
@@ -205,8 +205,8 @@ async def create_api_key(
     username = auth_service.verify_token(token)
 
     # Get user by username
-    result = await db.execute(select(User).where(User.username == username))
-    user = result.scalar_one_or_none()
+    result = await db.exec(select(User).where(User.username == username))
+    user = result.one_or_none()
 
     if not user or not user.id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
@@ -281,8 +281,8 @@ async def get_user_api_keys(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
         )
 
-    result = await db.execute(select(User).where(User.username == username))
-    user = result.scalar_one_or_none()
+    result = await db.exec(select(User).where(User.username == username))
+    user = result.one_or_none()
 
     if not user or not user.id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
@@ -331,8 +331,8 @@ async def delete_api_key(
 
     username = request.state.username
 
-    result = await db.execute(select(User).where(User.username == username))
-    user = result.scalar_one_or_none()
+    result = await db.exec(select(User).where(User.username == username))
+    user = result.one_or_none()
 
     auth_service = get_consolidated_auth_service()
     await auth_service.initialize()
